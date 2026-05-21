@@ -46,10 +46,10 @@ Return only the JSON object.`;
 // Model fallback chain — tried in order. Each entry: (model name, has thinking budget?).
 // Models earlier in the list are preferred; on 429 (rate limit / quota) we move to the next.
 const GEMINI_MODELS: Array<{ name: string; thinking: boolean }> = [
-  { name: 'gemini-flash-lite-latest', thinking: false },
-  { name: 'gemini-2.0-flash-lite', thinking: false },
-  { name: 'gemini-2.0-flash', thinking: false },
+  { name: 'gemini-3.5-flash', thinking: true },
   { name: 'gemini-2.5-flash', thinking: true },
+  { name: 'gemini-flash-lite-latest', thinking: false },
+  { name: 'gemini-2.0-flash', thinking: false },
 ];
 
 async function callGeminiOne(model: { name: string; thinking: boolean }, prompt: string, apiKey: string): Promise<string> {
