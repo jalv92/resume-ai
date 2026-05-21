@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-ink-50 text-ink-700 font-sans;
+    background-image:
+      radial-gradient(at 12% 0%, rgba(91, 98, 244, 0.08) 0px, transparent 50%),
+      radial-gradient(at 88% 100%, rgba(91, 98, 244, 0.05) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    @apply bg-indigo-500/20 text-ink-900;
+  }
+
+  textarea {
+    @apply font-sans;
+  }
+}
+
+@layer components {
+  .container-narrow {
+    @apply mx-auto w-full max-w-6xl px-6;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-ink-900 px-6 py-3 text-sm font-semibold text-ink-50 shadow-soft transition hover:bg-indigo-600 hover:shadow-lift disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-ink-200 bg-white px-5 py-2.5 text-sm font-medium text-ink-700 transition hover:border-ink-700 hover:text-ink-900;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-ink-100 px-3 py-1 text-xs font-medium tracking-wide text-ink-600 uppercase;
+  }
+
+  .card {
+    @apply rounded-3xl border border-ink-100 bg-white shadow-soft;
+  }
+
+  .input-area {
+    @apply w-full resize-none rounded-2xl border border-ink-100 bg-ink-50/50 px-5 py-4 text-base text-ink-800 placeholder:text-ink-300 transition focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10;
+  }
+
+  .locked {
+    position: relative;
+    user-select: none;
+  }
+
+  .locked::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 0%, rgba(246, 245, 241, 0.9) 60%, rgba(246, 245, 241, 1) 100%);
+    backdrop-filter: blur(6px);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
