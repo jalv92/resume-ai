@@ -43,20 +43,31 @@ ${jd.slice(0, 8000)}
 Return only the JSON object.`;
 }
 
-async function callGemini(prompt: string): Promise<string> {
-  const apiKey = requireEnv('GEMINI_API_KEY');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+// Model fallback chain — tried in order. Each entry: (model name, has thinking budget?).
+// Models earlier in the list are preferred; on 429 (rate limit / quota) we move to the next.
+const GEMINI_MODELS: Array<{ name: string; thinking: boolean }> = [
+  { name: 'gemini-flash-lite-latest', thinking: false },
+  { name: 'gemini-2.0-flash-lite', thinking: false },
+  { name: 'gemini-2.0-flash', thinking: false },
+  { name: 'gemini-2.5-flash', thinking: true },
+];
+
+async function callGeminiOne(model: { name: string; thinking: boolean }, prompt: string, apiKey: string): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model.name}:generateContent?key=${apiKey}`;
+  const generationConfig: Record<string, unknown> = {
+    temperature: 0.4,
+    topP: 0.9,
+    maxOutputTokens: model.thinking ? 8192 : 4096,
+    responseMimeType: 'application/json',
+  };
+  if (model.thinking) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.4,
-        topP: 0.9,
-        maxOutputTokens: 4096,
-        responseMimeType: 'application/json',
-      },
+      generationConfig,
       safetySettings: [
         { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
         { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
@@ -68,12 +79,31 @@ async function callGemini(prompt: string): Promise<string> {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Gemini API error ${res.status}: ${text.slice(0, 500)}`);
+    const err = new Error(`Gemini[${model.name}] ${res.status}: ${text.slice(0, 300)}`) as Error & { status?: number };
+    err.status = res.status;
+    throw err;
   }
   const data = (await res.json()) as any;
   const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error('Gemini returned no content');
+  if (!text) throw new Error(`Gemini[${model.name}] returned no content`);
   return text;
+}
+
+async function callGemini(prompt: string): Promise<string> {
+  const apiKey = requireEnv('GEMINI_API_KEY');
+  const errors: string[] = [];
+  for (const model of GEMINI_MODELS) {
+    try {
+      return await callGeminiOne(model, prompt, apiKey);
+    } catch (e: any) {
+      const status = e?.status as number | undefined;
+      errors.push(e?.message ?? String(e));
+      // Fall through to the next model only on rate-limit / quota / unavailable errors.
+      if (status === 429 || status === 503 || status === 404) continue;
+      throw e;
+    }
+  }
+  throw new Error(`All Gemini models exhausted. Last errors: ${errors.join(' | ').slice(0, 600)}`);
 }
 
 function tryParseAnalysis(raw: string): Analysis {
