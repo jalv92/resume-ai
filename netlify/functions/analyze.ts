@@ -54,8 +54,9 @@ async function callGemini(prompt: string): Promise<string> {
       generationConfig: {
         temperature: 0.4,
         topP: 0.9,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 8192,
         responseMimeType: 'application/json',
+        thinkingConfig: { thinkingBudget: 0 },
       },
       safetySettings: [
         { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
